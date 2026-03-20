@@ -1,0 +1,118 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 9,
+    "project": ["./tsconfig.json"]
+  },
+  "env": {
+    "es6": true,
+    "node": true
+  },
+  "extends": ["plugin:jsdoc/recommended-error", "prettier"],
+  "plugins": [
+    "@typescript-eslint",
+    "jsdoc",
+    "node",
+    "simple-import-sort",
+    "prettier",
+    "unused-imports"
+  ],
+  "rules": {
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "array-bracket-spacing": ["error", "never"],
+    "comma-dangle": ["error", "always-multiline"],
+    "func-style": ["error", "expression"],
+    "guard-for-in": 0,
+    "indent": [
+      "error",
+      2,
+      { "SwitchCase": 1, "ignoredNodes": ["PropertyDefinition"] }
+    ],
+    "jsdoc/require-jsdoc": [
+      "error",
+      {
+        "publicOnly": false,
+        "checkConstructors": false,
+        "require": {
+          "FunctionExpression": true,
+          "ArrowFunctionExpression": true,
+          "FunctionDeclaration": true,
+          "MethodDefinition": true,
+          "ClassDeclaration": false
+        }
+      }
+    ],
+    "jsdoc/newline-after-description": 0,
+    "jsdoc/require-description": "error",
+    "jsdoc/require-hyphen-before-param-description": "error",
+    "jsdoc/require-param-type": 0,
+    "jsdoc/require-param-description": 0,
+    "jsdoc/require-returns": 0,
+    "lines-between-class-members": [
+      "error",
+      "always",
+      { "exceptAfterSingleLine": true }
+    ],
+    "no-console": "error",
+    "no-await-in-loop": 0,
+    "no-continue": 0,
+    "no-labels": 0,
+    "no-magic-numbers": [
+      "error",
+      {
+        "ignore": [
+          -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 16, 32, 60, 64,
+          100, 1000, 60000, 3000, 5432, 65535
+        ],
+        "ignoreArrayIndexes": true,
+        "ignoreDefaultValues": true,
+        "ignoreClassFieldInitialValues": true
+      }
+    ],
+    "no-multi-assign": "error",
+    "no-multiple-empty-lines": "error",
+    "no-param-reassign": 0,
+    "no-plusplus": 0,
+    "no-promise-executor-return": 0,
+    "no-restricted-syntax": 0,
+    "no-undef": "error",
+    "no-use-before-define": "error",
+    "object-curly-spacing": ["error", "always"],
+    "one-var": ["error", "never"],
+    "padded-blocks": 0,
+    "prettier/prettier": [
+      "error",
+      {
+        "printWidth": 120,
+        "singleQuote": true,
+        "bracketSpacing": true,
+        "trailingComma": "all",
+        "arrowParens": "always"
+      }
+    ],
+    "quote-props": ["error", "as-needed"],
+    "semi": ["error", "always"],
+    "simple-import-sort/exports": "error",
+    "valid-jsdoc": 0,
+    "@typescript-eslint/no-unused-vars": "off",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.entity.ts", "**/*.entities.ts"],
+      "rules": {
+        "jsdoc/require-jsdoc": "off"
+      }
+    }
+  ]
+}
