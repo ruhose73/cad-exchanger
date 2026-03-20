@@ -17,7 +17,12 @@ class EnvironmentVariables {
   @IsString()
   DB_DATABASE: string;
 
-  /** APPLICATION ENVIRONMENT VARIABLES */
+  @IsString()
+  REDIS_HOST: string;
+
+  @IsString()
+  REDIS_PORT: string;
+
   @IsNumber()
   @Min(0)
   @Max(65535)
