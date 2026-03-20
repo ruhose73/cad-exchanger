@@ -14,14 +14,14 @@ if (!migrationName) {
 
 const fullMigrationName = `${migrationName}`;
 
-Logger.log(`🚀 Generating migration: ${fullMigrationName}`, loggerContext);
+Logger.log(`Generating migration: ${fullMigrationName}`, loggerContext);
 
 const projectRoot = resolve(__dirname, '..');
 const migrationsPath = resolve(projectRoot, 'src/migrations', fullMigrationName);
-const configPath = resolve(projectRoot, 'src/config/datasource-migration.config.ts');
+const configPath = resolve(projectRoot, 'src/config/datasource-migration.dev.config.ts');
 
-Logger.log(`📁 Config path: ${configPath}`, loggerContext);
-Logger.log(`📂 Migration path: ${migrationsPath}`, loggerContext);
+Logger.log(`Config path: ${configPath}`, loggerContext);
+Logger.log(`Migration path: ${migrationsPath}`, loggerContext);
 
 try {
   const command = `npx ts-node ./node_modules/typeorm/cli.js migration:generate "${migrationsPath}" -d "${configPath}"`;
@@ -32,9 +32,9 @@ try {
     cwd: projectRoot,
   });
 
-  Logger.log(`✅ Migration created: src/migrations/${fullMigrationName}.ts`, loggerContext);
+  Logger.log(`Migration created: src/migrations/${fullMigrationName}.ts`, loggerContext);
 } catch (error: any) {
-  Logger.log('❌ Failed to generate migration', loggerContext);
+  Logger.log('Failed to generate migration', loggerContext);
   Logger.log(`Error: ${error.message}`, loggerContext);
   process.exit(1);
 }
