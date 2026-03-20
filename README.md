@@ -1,71 +1,137 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Билетный сервис – бронирование мест
 
+*Разработано в рамках тестового задания – высоконагруженное бронирование билетов.*
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Проект представляет собой API-сервис для бронирования мест на концерт.  
+Спроектирован для высокой нагрузки (до 50 000 одновременных пользователей) с использованием **Redis** как быстрого слоя блокировок и **PostgreSQL** как постоянного хранилища.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-# Reserve service
+## Запуск приложения (Docker Compose)
 
-Сервис бронирования билетов, построенный с использованием NestJS и TypeORM.
+### Предварительные требования
+- Docker (версия 20.10+) и Docker Compose (плагин `docker compose`)
 
-## Описание
-
-Этот сервис предоставляет API для бронирования билетов. Он использует:
-
-- NestJS в качестве фреймворка
-- TypeORM для работы с базой данных
-- PostgreSQL в качестве базы данных
-
-## Установка
-
+### 1. Клонирование репозитория
 ```bash
-# Установка зависимостей
-npm install
+git clone <url-репозитория>
+cd <папка-проекта>
 ```
 
-## Настройка окружения
-
-Создайте файл `.env` в корне проекта и заполните его следующими переменными:
-
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_DATABASE=billing_db_service
-DB_SYNCHRONIZE=false
-PORT=3001
-```
-
-## Запуск приложения
-
+### 2. Запуск контейнеров
 ```bash
-# Запуск в режиме разработки
-npm run start:dev
+docker compose up -d
+```
+При первом запуске будут:
+- Созданы контейнеры для **PostgreSQL**, **Redis**, **pgAdmin** и самого **API**.
+- Автоматически выполнены миграции базы данных.
+- В таблицу `seats` добавлено **100 тестовых мест** со статусом `free`.
 
-# Запуск в production режиме
-npm run start:prod
+### 3. Проверка работоспособности
+- **API** доступно по адресу: [http://localhost:3001](http://localhost:3001)
+- **Swagger документация**: [http://localhost:3001/docs](http://localhost:3001/docs)  
+  (кликабельная, можно отправлять запросы через `Try it out`)
+
+### 4. pgAdmin (управление БД)
+- **URL**: [http://localhost:5050](http://localhost:5050)
+- **Логин**: `admin@example.com`
+- **Пароль**: `admin`
+
+После входа добавьте сервер:
+- **Host name/address**: `postgres`
+- **Port**: `5432`
+- **Username**: `postgres`
+- **Password**: `123456789`
+- **Database**: `cad_exchanger`
+
+---
+
+## Архитектура и принятые решения
+
+### Основная логика – Redis + PostgreSQL
+- **Redis** хранит два множества:
+  - `allSeats` – список всех ID мест (инициализируется при старте).
+  - `occupied` – множество занятых мест.
+- При бронировании выполняется **атомарная операция `SADD`** в Redis. Если место свободно – элемент добавляется, иначе команда возвращает 0.  
+- **PostgreSQL** используется как **постоянное хранилище**. После успешной блокировки в Redis, данные сохраняются в БД. Если сохранение не удалось, блокировка в Redis откатывается.
+
+### Почему Redis?
+- Операции `SADD` / `SISMEMBER` выполняются в оперативной памяти, что позволяет обрабатывать десятки тысяч запросов в секунду.
+- Redis обеспечивает атомарность на уровне одной команды, что идеально подходит для бронирования.
+
+### Почему PostgreSQL?
+- Надёжное, транзакционное хранилище, гарантирующее сохранность данных даже при перезапуске Redis.
+- Восстановление состояния после сбоя: при старте приложения список занятых мест загружается из БД в Redis (в рамках тестового задания очень сделано весьма просто).
+
+---
+
+## Альтернативные подходы
+
+### 1. Только PostgreSQL с атомарным `UPDATE`
+```sql
+UPDATE seats SET status = 'reserved' WHERE id = :id AND status = 'free' RETURNING *;
+```
+- При пиковой нагрузке на одно место все запросы, кроме одного, будут ждать.
+
+### 2. Только Redis с Lua‑скриптом
+```lua
+if redis.call('EXISTS', 'seat:'..seatId) == 0 then
+    redis.call('SET', 'seat:'..seatId, userId)
+    return 1
+else return 0 end
+```
+- Максимальная скорость, но данные могут быть потеряны при перезапуске Redis (если не настроена персистентность).
+
+### 3. Nginx + модуль `redis` (без приложения)
+- Lua-скрипт в nginx напрямую общается с Redis, минуя Node.js.
+- Ещё выше производительность, но сложность отладки и ограниченная бизнес-логика.
+
+### 4. Блокировки на уровне базы данных (`SELECT ... FOR UPDATE`)
+- Пессимистичные блокировки гарантируют, что два запроса не смогут одновременно изменить одну строку.
+- Медленнее Redis, но проще в реализации без дополнительных компонентов.
+
+---
+
+## 📦 Структура проекта (основные файлы)
+```
+.
+├── docker-compose.yml
+├── Dockerfile
+├── src/
+│   ├── main.ts                     # запуск приложения
+│   ├── config/                     # конфиг файлы для pg/redis/swagger
+│   ├── entities/                   # сущности TypeORM
+│   ├── migrations/                 # миграции TypeORM
+│   ├── redis/                      # RedisModule, RedisService
+│   ├── reserve/                    # контроллеры, сервисы бронирования
+│   └── startup/                    # инициализация при старте (заполнение БД и Redis)
+├── package.json
+└── README.md
 ```
 
-## Documentation
+---
 
-Документация Swagger доступна по адресу `/docs`.
+## Тестирование
+
+### Пример запроса на бронирование (через Swagger или curl)
+```bash
+curl -X POST http://localhost:3001/reserve \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": a1b2c3d4-..., "seat_id": "a1b2c3d4-..."}'
+```
+
+### Проверка статусов всех мест (вспомогательная ручка, для удобства)
+```bash
+curl http://localhost:3001/reserve
+```
+
+---
+
+## 🔧 Остановка и удаление
+```bash
+docker compose down
+# Чтобы удалить также тома с данными:
+docker compose down -v
+```
+
+---

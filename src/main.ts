@@ -29,7 +29,7 @@ export const bootstrap = async () => {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('/docs', app, document);
 
-  await app.listen(PORT);
+  await app.listen(PORT, '0.0.0.0');
   Logger.log(`Application is running on: http://localhost:${PORT}`, AppModule.name);
   Logger.log(`Documentation is running on: http://localhost:${PORT}/docs`, AppModule.name);
 };
